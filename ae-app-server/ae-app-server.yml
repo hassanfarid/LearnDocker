@@ -1,0 +1,31 @@
+# using CentOS base image
+FROM centos:7.2.1511
+
+# Setup OS with new user
+RUN adduser satmapai
+RUN echo -e "P@ssword1\nP@ssword1" | passwd satmapai
+RUN usermod -aG root satmapai
+#RUN su satmapai
+
+# Setup sshd
+RUN yum install -y openssh-server which
+RUN mkdir -p /var/run/sshd && \
+    echo "root:root" | chpasswd
+ADD init-functions /etc/rc.d/init.d/functions
+RUN /usr/sbin/sshd-keygen
+RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
+RUN sed -ri 's/#UsePAM no/UsePAM no/g' /etc/ssh/sshd_config
+
+
+# Setup Application environment
+
+RUN yum repolist; yum -y update && yum clean all; \
+yum repolist; echo -e "y" | yum install wget; \
+echo -e "y" | yum install curl-devel expat-devel gettext-devel vim-enhanced openssl-devel perl-devel zlib-devel xz bzip2-devel libicu-devel cairo-devel libXt-devel unixODBC unixODBC-devel; \
+echo -e "y" | yum groupinstall "Development Tools" --setopt=group_package_types=mandatory,default,optional; \
+
+CMD /usr/sbin/sshd -D
+
+# Setup application port
+EXPOSE 1300
+EXPOSE 22
